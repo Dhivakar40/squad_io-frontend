@@ -18,7 +18,11 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
   bool _isLoading = false;
 
   Future<void> _createTeam() async {
-    if (_nameController.text.isEmpty) return;
+    // 1. Validation
+    if (_nameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Team Name is required!")));
+      return;
+    }
 
     setState(() => _isLoading = true);
     final userId = Supabase.instance.client.auth.currentUser!.id;
@@ -28,23 +32,41 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
         Uri.parse('${ApiService.baseUrl.replaceAll("/match", "")}/teams/create'),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
-          "name": _nameController.text,
-          "description": _descController.text,
+          "name": _nameController.text.trim(),
+          "description": _descController.text.trim(),
           "leaderId": userId,
-          "bucketId": 1 // Defaulting to 1 for now (General Project)
+          "bucketId": 1
         }),
+      ).timeout(const Duration(seconds: 10)
       );
 
+      // 3. Handle Response
       if (response.statusCode == 200) {
         if (mounted) {
-          // Success! Go to the "Student Feed" to find members
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const TeammateFeed()));
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Team Created Successfully! 🚀"), backgroundColor: Colors.green)
+          );
+
+          // DELAY slightly so user sees the success message
+          await Future.delayed(const Duration(seconds: 1));
+
+          // 4. NAVIGATE to the Marketplace (Find Teammates)
+          Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => const TeammateFeed())
+          );
         }
       } else {
-        throw Exception("Failed: ${response.body}");
+        // Parse error message from server
+        final errorData = jsonDecode(response.body);
+        throw Exception(errorData['error'] ?? "Unknown error");
       }
     } catch (e) {
-      if(mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error: $e")));
+      if(mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Failed: $e"), backgroundColor: Colors.red)
+        );
+      }
     } finally {
       if(mounted) setState(() => _isLoading = false);
     }
