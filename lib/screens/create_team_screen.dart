@@ -20,7 +20,9 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
   Future<void> _createTeam() async {
     // 1. Validation
     if (_nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Team Name is required!")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Team Name is required!")),
+      );
       return;
     }
 
@@ -28,6 +30,7 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
     final userId = Supabase.instance.client.auth.currentUser!.id;
 
     try {
+      // 2. The API Call (With 10s Timeout)
       final response = await http.post(
         Uri.parse('${ApiService.baseUrl.replaceAll("/match", "")}/teams/create'),
         headers: {"Content-Type": "application/json"},
@@ -35,22 +38,19 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
           "name": _nameController.text.trim(),
           "description": _descController.text.trim(),
           "leaderId": userId,
-          "bucketId": 1
+          "bucketId": 1 // Default to 'General Project'
         }),
-      ).timeout(const Duration(seconds: 10)
-      );
+      ).timeout(const Duration(seconds: 90));
 
       // 3. Handle Response
       if (response.statusCode == 200) {
         if (mounted) {
+          // SHOW SUCCESS MESSAGE
           ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Team Created Successfully! 🚀"), backgroundColor: Colors.green)
+              const SnackBar(content: Text("Team Created! Redirecting..."), backgroundColor: Colors.green)
           );
 
-          // DELAY slightly so user sees the success message
-          await Future.delayed(const Duration(seconds: 1));
-
-          // 4. NAVIGATE to the Marketplace (Find Teammates)
+          // IMMEDIATE NAVIGATION (Delay removed for speed)
           Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (_) => const TeammateFeed())
@@ -95,8 +95,14 @@ class _CreateTeamScreenState extends State<CreateTeamScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _createTeam,
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple, foregroundColor: Colors.white, padding: const EdgeInsets.all(16)),
-                child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text("Create Team & Find Members"),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.all(16)
+                ),
+                child: _isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text("Create Team & Find Members"),
               ),
             )
           ],

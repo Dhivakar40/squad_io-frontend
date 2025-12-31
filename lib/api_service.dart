@@ -4,7 +4,7 @@ import 'user_model.dart';
 
 class ApiService {
   // 1. ADD '/api/match' to the end of the base URL
-  static const String baseUrl = "https://squad-io-backend.onrender.com/api/match";
+  static const String baseUrl = "https://squad-io-backend.vercel.app/api/match";
 
   final String myUserId = "11111111-1111-1111-1111-111111111111";
 

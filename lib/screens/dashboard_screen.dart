@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:squad_io/main.dart'; // For TeammateFeed (Path B)
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'create_team_screen.dart'; // We will create this next
+import 'inbox_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -14,11 +15,22 @@ class DashboardScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text("Squad.io"),
         actions: [
+          // --- INBOX BUTTON (New) ---
+          IconButton(
+            icon: const Icon(Icons.notifications),
+            tooltip: 'Inbox',
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const InboxScreen()));
+            },
+          ),
           IconButton(
               icon: const Icon(Icons.logout),
+              tooltip: 'Logout',
               onPressed: () async {
                 // 1. Sign out from Supabase
                 await Supabase.instance.client.auth.signOut();
+
+                // 2. Clear navigation stack and return to Login (handled by AuthGate usually, but this forces it)
                 if (context.mounted) {
                   Navigator.of(context).popUntil((route) => route.isFirst);
                 }
