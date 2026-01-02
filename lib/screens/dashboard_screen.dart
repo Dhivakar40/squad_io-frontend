@@ -3,6 +3,10 @@ import 'package:squad_io/main.dart'; // For TeammateFeed (Path B)
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'create_team_screen.dart'; // We will create this next
 import 'inbox_screen.dart';
+import 'team_feed_screen.dart';
+import 'my_squads_screen.dart';
+import 'edit_profile_screen.dart';
+import 'team_feed_screen.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -16,6 +20,13 @@ class DashboardScreen extends StatelessWidget {
         title: const Text("Squad.io"),
         actions: [
           // --- INBOX BUTTON (New) ---
+          IconButton(
+            icon: const Icon(Icons.person),
+            tooltip: 'Edit Profile',
+            onPressed: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfileScreen()));
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.notifications),
             tooltip: 'Inbox',
@@ -36,6 +47,7 @@ class DashboardScreen extends StatelessWidget {
                 }
               }
           )
+
         ],
       ),
       body: Padding(
@@ -57,14 +69,22 @@ class DashboardScreen extends StatelessWidget {
               subtitle: "Browse existing teams looking for your skills.",
               color: Colors.blue.shade100,
               onTap: () {
-                // TODO: Navigate to TeamFeed (Sprint 2 View B)
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Coming in Sprint 2!")));
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const TeamFeedScreen()));
               },
             ),
 
             const SizedBox(height: 20),
-
-            // PATH B: I HAVE AN IDEA -> RECRUIT TEAMMATES
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.star_border),
+                label: const Text("My Squads"),
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const MySquadsScreen()));
+                },
+              ),
+            ),
+            const SizedBox(height: 20),
             _buildOptionCard(
               context,
               icon: Icons.group_add,
