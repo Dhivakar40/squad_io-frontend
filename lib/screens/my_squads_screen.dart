@@ -60,7 +60,6 @@ class _MySquadsScreenState extends State<MySquadsScreen> {
                         subtitle: Text(team['description'] ?? ""),
                         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                         onTap: () {
-                           // Future: Open Team Management (See members, etc.)
                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Management Coming Soon!")));
                         },
                       ),

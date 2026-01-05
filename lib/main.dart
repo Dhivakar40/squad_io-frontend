@@ -3,8 +3,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/login_screen.dart';
 import 'api_service.dart';
 import 'user_model.dart';
-import 'screens/create_profile_screen.dart'; // Ensure this file exists
-import 'screens/dashboard_screen.dart';      // Ensure this file exists
+import 'screens/create_profile_screen.dart';
+import 'screens/dashboard_screen.dart';
+import 'screens/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,8 +30,9 @@ class SquadApp extends StatelessWidget {
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      // CORRECTED: Restored AuthGate to handle Login vs Dashboard
-      home: const AuthGate(),
+      // CORRECTED: Only use SplashScreen here.
+      // The SplashScreen will handle the navigation to AuthGate.
+      home: const SplashScreen(),
     );
   }
 }
@@ -54,7 +56,6 @@ class AuthGate extends StatelessWidget {
         if (session != null) {
           // 2. User is logged in! Now check if their profile is complete.
           return FutureBuilder(
-            // Fetch the specific user row from the database
             future: Supabase.instance.client
                 .from('users')
                 .select()
@@ -66,11 +67,10 @@ class AuthGate extends StatelessWidget {
                 return const Scaffold(body: Center(child: CircularProgressIndicator()));
               }
 
-              // Check if we have data
               final data = userSnapshot.data;
 
               // 3. THE DECISION LOGIC
-              // If data is null OR full_name is empty/null -> Go to Setup
+              // If data is null OR full_name is empty -> Go to Create Profile
               if (data == null || data['full_name'] == null || data['full_name'] == '') {
                 return const CreateProfileScreen();
               }
@@ -89,7 +89,6 @@ class AuthGate extends StatelessWidget {
 }
 
 // ------------------- TEAMMATE FEED SCREEN -------------------
-// (Note: This is used when navigating from the Dashboard)
 class TeammateFeed extends StatefulWidget {
   const TeammateFeed({super.key});
 
@@ -109,8 +108,11 @@ class _TeammateFeedState extends State<TeammateFeed> {
 
   Future<void> _logout() async {
     await Supabase.instance.client.auth.signOut();
-    // AuthGate handles the redirect automatically
+    // Because AuthGate is listening to the stream,
+    // we just need to pop any screens on top of it.
     if (mounted) {
+      // This ensures we go back to the root (AuthGate) which will see the user is logged out
+      // and switch the view to LoginScreen automatically.
       Navigator.of(context).popUntil((route) => route.isFirst);
     }
   }
