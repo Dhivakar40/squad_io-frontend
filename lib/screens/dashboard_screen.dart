@@ -57,7 +57,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             // --- LOGO CHANGE HERE ---
             Image.asset(
-              'assets/logo-icon.ico',
+              'assets/logo-remove.png',
               height: 32, // Adjusted size to fit AppBar
               fit: BoxFit.contain,
             ),
