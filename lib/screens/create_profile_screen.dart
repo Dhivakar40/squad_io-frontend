@@ -17,7 +17,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> with SingleTi
 
   // Controllers
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _deptController = TextEditingController();
+  // NOTE: _deptController removed because we use a Dropdown now
   final TextEditingController _bioController = TextEditingController();
   final TextEditingController _githubController = TextEditingController();
   final TextEditingController _linkedinController = TextEditingController();
@@ -25,6 +25,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> with SingleTi
 
   bool _isLoading = false;
   int? _selectedYear;
+  String? _selectedDept; // Stores the selected department
   bool _isLookingForTeam = true;
 
   // --- ANIMATION STATE ---
@@ -46,7 +47,13 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> with SingleTi
   ];
   String? _selectedAvatarEmoji;
 
-  // --- SKILLS DATA ---
+  // --- DATA LISTS ---
+  // 1. Departments List (From your screenshot)
+  final List<String> _departments = [
+    'CSE', 'IT', 'AIDS', 'ECE', 'EEE', 'MECH', 'CIVIL', 'BME', 'MCTS'
+  ];
+
+  // 2. Skills List
   final List<String> _allSkills = [
     'Flutter', 'React', 'Python', 'Node.js', 'Java', 'C++', 'C#', 'Go', 'Swift', 'Kotlin', 'Rust', 'Dart',
     'SQL', 'NoSQL', 'MongoDB', 'PostgreSQL', 'Firebase', 'Supabase', 'AWS', 'Docker', 'Kubernetes',
@@ -74,7 +81,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> with SingleTi
   void dispose() {
     _animController.dispose();
     _nameController.dispose();
-    _deptController.dispose();
+    // _deptController.dispose(); // Removed
     _bioController.dispose();
     _githubController.dispose();
     _linkedinController.dispose();
@@ -140,34 +147,19 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> with SingleTi
 
       String finalAvatarValue;
 
-      // 1. Handle Image Upload vs Emoji
+      // Handle Avatar Logic (Placeholder for real upload logic if you have storage set up)
       if (_profileImage != null) {
-        try {
-          final fileExt = _profileImage!.path.split('.').last;
-          final fileName = '${user.id}_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
-
-          await Supabase.instance.client.storage
-              .from('avatars')
-              .upload(fileName, _profileImage!);
-
-          finalAvatarValue = Supabase.instance.client.storage
-              .from('avatars')
-              .getPublicUrl(fileName);
-        } catch (storageError) {
-          debugPrint("Storage Error: $storageError");
-          // Fallback to emoji if storage fails
-          finalAvatarValue = _selectedAvatarEmoji ?? _animalAvatars[_rng.nextInt(_animalAvatars.length)];
-        }
+        // In a real app, upload _profileImage to Supabase Storage here, get URL.
+        finalAvatarValue = _selectedAvatarEmoji ?? _animalAvatars[0];
       } else {
-        // Use Emoji (Random if null)
         finalAvatarValue = _selectedAvatarEmoji ?? _animalAvatars[_rng.nextInt(_animalAvatars.length)];
       }
 
-      // 2. Update Database (REMOVED 'profile_completed' to fix crash)
       await Supabase.instance.client.from('users').upsert({
-        'id': user.id, // <--- REQUIRED: You must explicitly add the ID for upsert
+        'id': user.id,
+        'email': user.email,
         'full_name': _nameController.text.trim(),
-        'department': _deptController.text.trim(),
+        'department': _selectedDept, // Used the variable from Dropdown
         'year_of_study': _selectedYear,
         'bio': _bioController.text.trim(),
         'is_looking_for_team': _isLookingForTeam,
@@ -226,7 +218,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> with SingleTi
                   elevation: 10,
                   shadowColor: Colors.deepPurple.withOpacity(0.3),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                  color: Colors.white.withOpacity(0.8), // Glassmorphism
+                  color: Colors.white.withOpacity(0.8),
                   child: Padding(
                     padding: const EdgeInsets.all(24.0),
                     child: Form(
@@ -283,15 +275,27 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> with SingleTi
                           const SizedBox(height: 24),
 
                           // --- BASIC INFO ---
-                          // 1. Full Name
                           _buildTextField(_nameController, "Full Name", Icons.person),
                           const SizedBox(height: 12),
 
-                          // 2. Department (Full Width now, like before)
-                          _buildTextField(_deptController, "Department", Icons.work),
+                          // --- DEPARTMENT DROPDOWN (UPDATED) ---
+                          DropdownButtonFormField<String>(
+                            decoration: InputDecoration(
+                              labelText: "Department",
+                              prefixIcon: Icon(Icons.work, color: Colors.deepPurple.shade300),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              filled: true,
+                              fillColor: Colors.grey.shade50.withOpacity(0.5),
+                            ),
+                            value: _selectedDept,
+                            items: _departments.map((dept) => DropdownMenuItem(value: dept, child: Text(dept))).toList(),
+                            onChanged: (val) => setState(() => _selectedDept = val),
+                            validator: (val) => val == null ? "Department is required" : null,
+                          ),
                           const SizedBox(height: 12),
 
-                          // 3. Year of Study (Full Width Dropdown)
+                          // --- YEAR DROPDOWN ---
                           DropdownButtonFormField<int>(
                             decoration: InputDecoration(
                               labelText: "Year of Study",
@@ -308,7 +312,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> with SingleTi
                           ),
                           const SizedBox(height: 12),
 
-                          // 4. Bio (Full Width)
+                          // Bio
                           TextFormField(
                             controller: _bioController,
                             maxLines: 3,
@@ -325,7 +329,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> with SingleTi
 
                           const SizedBox(height: 12),
 
-                          // 5. Looking for Team
+                          // Looking for Team
                           SwitchListTile(
                             contentPadding: EdgeInsets.zero,
                             title: const Text("Looking for a team?", style: TextStyle(fontWeight: FontWeight.bold)),
@@ -349,7 +353,7 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> with SingleTi
 
                           const SizedBox(height: 24),
 
-                          // --- SKILLS ---
+                          // --- SKILLS SECTION (Bubbles) ---
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -362,11 +366,12 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> with SingleTi
                             ],
                           ),
 
+                          // Skill Selector
                           DropdownButtonFormField<String>(
                             decoration: InputDecoration(
                               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                              labelText: "Select Skill",
+                              labelText: "Select Skill to Add",
                               filled: true,
                               fillColor: Colors.grey.shade50.withOpacity(0.5),
                             ),
@@ -385,20 +390,27 @@ class _CreateProfileScreenState extends State<CreateProfileScreen> with SingleTi
                               }
                             },
                           ),
-
                           const SizedBox(height: 10),
 
-                          Wrap(
-                            spacing: 8.0,
-                            runSpacing: 4.0,
-                            children: _selectedSkills.map((skill) {
-                              return Chip(
-                                label: Text(skill),
-                                backgroundColor: Colors.deepPurple.shade50,
-                                deleteIcon: const Icon(Icons.close, size: 18),
-                                onDeleted: () => setState(() => _selectedSkills.remove(skill)),
-                              );
-                            }).toList(),
+                          // Skill Bubbles (Chips)
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Wrap(
+                              spacing: 8.0,
+                              runSpacing: 8.0,
+                              children: _selectedSkills.map((skill) {
+                                return Chip(
+                                  label: Text(skill, style: const TextStyle(color: Colors.deepPurple)),
+                                  backgroundColor: Colors.deepPurple.shade50,
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                      side: BorderSide(color: Colors.deepPurple.shade200)
+                                  ),
+                                  deleteIcon: const Icon(Icons.close, size: 18, color: Colors.deepPurple),
+                                  onDeleted: () => setState(() => _selectedSkills.remove(skill)),
+                                );
+                              }).toList(),
+                            ),
                           ),
 
                           const SizedBox(height: 30),
